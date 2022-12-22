@@ -27,7 +27,7 @@
             android:id="@+id/maxReadingsTextview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Hello World!"
+            android:text="Max Readings"
             android:textSize="40sp"
             android:layout_weight="1"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Headline1"
@@ -40,12 +40,63 @@
             android:id="@+id/bytesTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Hello World!"
+            android:text="Regular Readings"
             android:textSize="40sp"
             android:layout_weight="1"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Headline1"
             android:textColor="@color/white"
             />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center"
+        android:layout_marginTop="25dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:gravity="center"
+        >
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/reset_btn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Reset"
+            android:layout_margin="5dp"
+            android:layout_weight="1"
+            android:textAllCaps="false"
+            app:cornerRadius="20dp"
+            android:backgroundTint="#DD5A30"
+            app:elevation="20dp"
+            />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/stop_Listening_btn"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Stop Listening"
+            android:layout_margin="5dp"
+            android:textAllCaps="false"
+            app:cornerRadius="20dp"
+            android:backgroundTint="#C2185B"
+            app:elevation="20dp"
+            />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/start_Listening_btn"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Start Listening"
+            android:textAllCaps="false"
+            android:layout_margin="5dp"
+            app:cornerRadius="20dp"
+            android:backgroundTint="#1BAF22"
+            app:elevation="20dp" />
+
+    </LinearLayout>
 
     </LinearLayout>
 

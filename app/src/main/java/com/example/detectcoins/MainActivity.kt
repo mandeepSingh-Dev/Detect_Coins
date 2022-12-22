@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.icu.number.IntegerWidth
 import android.icu.number.NumberRangeFormatter
+import android.media.AudioRecord
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -18,9 +19,9 @@ import com.example.detectcoins.calculators.AudioCalculatork
 import com.example.detectcoins.core.AudioCallback
 import com.example.detectcoins.core.AudioRecorder
 import com.example.detectcoins.databinding.ActivityMainBinding
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
 class MainActivity : AppCompatActivity(),AudioCallback{
 
@@ -29,7 +30,15 @@ class MainActivity : AppCompatActivity(),AudioCallback{
     lateinit var audioCalculator : AudioCalculator
 
     lateinit var audioCalculatork : AudioCalculatork
-    lateinit var audioRecorder: AudioRecorder
+     val audioRecorder: AudioRecorder by lazy{  AudioRecorder(this,this)  }
+
+    val doubleMinValue = Int.MIN_VALUE.toDouble()
+    val intMinValue = Int.MIN_VALUE
+
+    var delay:Int = 0
+
+    var _scope = MutableStateFlow<Job>(Job())
+    val scopee : StateFlow<Job> get() = _scope
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,16 +48,6 @@ class MainActivity : AppCompatActivity(),AudioCallback{
         audioCalculator = AudioCalculator()
         audioCalculatork = AudioCalculatork()
 
-        Log.d("doidvmdv",Int.MAX_VALUE.toString()+"  MAX_VALUE")
-        Log.d("doidvmdv",Int.MIN_VALUE.toString()+"  MIN_VALUE")
-        Log.d("doidvmdv",Int.SIZE_BITS.toString()+"  SIZE_BITS")
-        Log.d("doidvmdv",Int.SIZE_BYTES.toString()+"  SIZE_BITS")
-
-        Log.d("doidvmdv",Double.MAX_VALUE.toString()+"  MAX_VALUE")
-        Log.d("doidvmdv",Double.MIN_VALUE.toString()+"  MIN_VALUE")
-        Log.d("doidvmdv",Double.SIZE_BITS.toString()+"  SIZE_BITS")
-        Log.d("doidvmdv",Double.NEGATIVE_INFINITY.toString()+"  SIZE_BYTES")
-
 
 
         if(ActivityCompat.checkSelfPermission(this,Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)
@@ -56,10 +55,75 @@ class MainActivity : AppCompatActivity(),AudioCallback{
             ActivityCompat.requestPermissions(this, arrayOf( Manifest.permission.RECORD_AUDIO ),100)
         }
 
-         audioRecorder = AudioRecorder(this)
 
         CoroutineScope(Dispatchers.Main).launch {
-            audioRecorder.start(applicationContext)
+          /* val state =  audioRecorder.start(applicationContext)
+            when(state)
+            {
+             AudioRecord.STATE_UNINITIALIZED -> Snackbar.make(binding.root,"State Uninitialized !",Snackbar.LENGTH_SHORT).show()
+             AudioRecord.RECORDSTATE_RECORDING -> Snackbar.make(binding.root,"Recording started", Snackbar.LENGTH_SHORT).show()
+                AudioRecord.STATE_INITIALIZED -> Snackbar.make(binding.root,"State Uninitialized", Snackbar.LENGTH_SHORT).show()
+                AudioRecord.RECORDSTATE_STOPPED -> Snackbar.make(binding.root,"Recording Stopped", Snackbar.LENGTH_SHORT).show()
+            }*/
+        }
+
+        setListener()
+
+        CoroutineScope(Dispatchers.Main).launch {
+            scopee.collect {
+                Toast.makeText(this@MainActivity, it.isActive.toString(), Toast.LENGTH_SHORT).show()            }
+        }
+    }
+
+    fun setListener(){
+        binding.resetBtn.setOnClickListener {
+
+            delay = 500
+           val job =  CoroutineScope(Dispatchers.Main).launch {
+                if(maxAmplitude!=intMinValue && maxdecibel!= doubleMinValue && maxfrequency!=doubleMinValue && maxFreq_KHz!=doubleMinValue)
+                {
+                    maxAmplitude = intMinValue
+                    maxdecibel = doubleMinValue
+                    maxfrequency = doubleMinValue
+                    maxFreq_KHz = doubleMinValue
+
+                    binding.maxReadingsTextview.text = "Max. Amp 0 \n Max.dB 0.0 \n Max. Hz 0.0 \n Max. KHz 0.0"
+
+                }else{ }
+                delay(delay.toLong())
+                delay = 0
+           }
+        }
+
+        binding.stopListeningBtn.setOnClickListener {
+            val recordingState = audioRecorder.getRecorderState()
+            if(recordingState == AudioRecord.RECORDSTATE_RECORDING || recordingState == AudioRecord.STATE_INITIALIZED)
+            {
+                audioRecorder.stop()
+            }else{
+            }
+        }
+
+        binding.startListeningBtn.setOnClickListener {
+
+            CoroutineScope(Dispatchers.Main).launch {
+                if (audioRecorder.recorder == null) {
+                    Toast.makeText(this@MainActivity, "Recording Started", Toast.LENGTH_SHORT).show()
+                    audioRecorder.start(this@MainActivity)
+                }
+                else{
+                    val recordingState = audioRecorder.getRecorderState()
+                    if( recordingState == AudioRecord.STATE_UNINITIALIZED || recordingState == AudioRecord.RECORDSTATE_STOPPED )
+                    {
+                            val state = audioRecorder.start(this@MainActivity)
+                            if(state == AudioRecord.STATE_INITIALIZED || state == AudioRecord.RECORDSTATE_RECORDING)
+                            {
+                            }
+                    }
+                    else{
+                    }
+                }
+            }
         }
 
     }
@@ -74,57 +138,66 @@ class MainActivity : AppCompatActivity(),AudioCallback{
 
 
 
-    var maxAmplitude = 0
-    var maxdecibel : Double = 0.0
-    var maxfrequency : Double = 0.0
-    var maxFreq_KHz : Double = 0.0
+    var maxAmplitude = intMinValue
+    var maxdecibel : Double = doubleMinValue
+    var maxfrequency : Double = doubleMinValue
+    var maxFreq_KHz : Double = doubleMinValue
 
 
     @SuppressLint("SetTextI18n")
     override fun onBufferAvailable(buffer : ByteArray) {
-        runOnUiThread {
 
-           // binding.scrollview.fullScroll(View.FOCUS_DOWN)
-            audioCalculatork.setBytes(buffer)
-            audioCalculator.setBytes(buffer)
-            Log.d("diofdfd",audioCalculatork.getAmplitude().toString())
-            Log.d("dnskdJAVA",audioCalculator.getAmplitude().toString())
-            binding.bytesTextView.setText( "AMP : ${ audioCalculatork.getAmplitude().toString()} \n" +
-                                           "dB : ${audioCalculatork.getDecibel().toString()} \n " +
-                                           "Hz : ${audioCalculatork.getFrequency().toString()}")
+        CoroutineScope(Dispatchers.Main).launch {
+            runOnUiThread {
+
+                // binding.scrollview.fullScroll(View.FOCUS_DOWN)
+                audioCalculatork.setBytes(buffer)
+                audioCalculator.setBytes(buffer)
+                Log.d("diofdfd",audioCalculatork.getAmplitude().toString())
+                Log.d("dnskdJAVA",audioCalculator.getAmplitude().toString())
+                binding.bytesTextView.setText( "AMP : ${ audioCalculatork.getAmplitude().toString()} \n" +
+                        "dB : ${audioCalculatork.getDecibel().toString()} \n " +
+                        "Hz : ${audioCalculatork.getFrequency().toString()}")
 
 
-            if(audioCalculatork.getAmplitude() > maxAmplitude)
-            {
-                maxAmplitude = audioCalculatork.getAmplitude()
+                if(audioCalculatork.getAmplitude() > maxAmplitude)
+                {
+                    maxAmplitude = audioCalculatork.getAmplitude()
+                }
+                if(audioCalculatork.getDecibel() > maxdecibel)
+                {
+                    maxdecibel = audioCalculatork.getDecibel()
+                }
+                if(audioCalculatork.getFrequency() > maxfrequency) {
+                    maxfrequency = audioCalculatork.getFrequency()
+                    maxFreq_KHz = maxfrequency/1000
+                }
+
+                if(delay == 0) {
+                    binding.maxReadingsTextview.text = "Max. Amp ${maxAmplitude} \n Max.dB ${maxdecibel} \n Max. Hz ${maxfrequency} \n Max. KHz ${maxFreq_KHz}"
+                }
+
+
             }
-            if(audioCalculatork.getDecibel() > maxdecibel)
-            {
-                maxdecibel = audioCalculatork.getDecibel()
-            }
-            if(audioCalculatork.getFrequency() > maxfrequency) {
-                maxfrequency = audioCalculatork.getFrequency()
-                maxFreq_KHz = maxfrequency/1000
-            }
-
-            binding.maxReadingsTextview.text = "Max. Amp ${maxAmplitude} \n Max.dB ${maxdecibel} \n Max. Hz ${maxfrequency} \n Max. KHz ${maxFreq_KHz}"
+        }
 
 
-
-
-
-
-
-
-
-           // Log.d("fidfndifvnv",audioCalculator.getDecibel().toString())
-            //Log.d("fidfndifvnv",audioCalculator.getFrequency().toString())
 
         }
+
+    override fun onStop() {
+        super.onStop()
+        if(audioRecorder != null)
+        {
+            audioRecorder.stop()
         }
+
+    }
 
     override fun onDestroy() {
         super.onDestroy()
-        audioRecorder.stop()
+        if(audioRecorder!=null) {
+            audioRecorder.stop()
+        }
     }
 }
